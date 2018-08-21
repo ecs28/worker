@@ -155,5 +155,5 @@ if __name__ == "__main__":
     try:
         worker.send_invites()
     except Exception as e:
-        print(e.__cause__)
+        print(e)
         worker.driver.close()
