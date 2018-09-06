@@ -18,18 +18,23 @@ import os
 import time
 
 from selenium import webdriver
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys as KEYS
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
 
 class Config:
     INSTA_BASE_URL = "https://www.instagram.com/"
     LOGON_URL = INSTA_BASE_URL + "accounts/login/"
     # coloque os perfis
-    PROFILES = ["tattoo4us", "monstrustattoobrasil"]
-    USER = "<coloque aqui o usuario>"
-    PWD = "coloque aqui a senha"
+    PROFILES = [ "aruba_br", "viajandosanandres", "amazingthailand",
+                "destinopuntacana", "tenerife.canary.islands", "jericoacoara", "paratyrjj",
+                "portodegalinhas", "portoseguro.bahia", "maceioalagoas", "cyprus.photos", "fortalezacearaoficial",
+                "visitetrancoso", "ilhabela_sp", "floripando", "jurereinternacionaloficial",
+                "gohawaii", "visitgreecegr", "salinasmaragogi", "ecoangradosreis", "ilhagrande_bra"]
+    USER = "angradosreisparadise@gmail.com"
+    PWD = "86!vivi!edith"
 
 
 class Css:
@@ -38,8 +43,9 @@ class Css:
     LOGIN_BUTTON = "button"
     FOLLOWERS_LINK = "//a[contains(@href, {}/followers)]"
     FOLLOW_BUTTON = "//ul//button[ text() = 'Follow' or text() = 'Seguir' ]"
-    CLOSE_MODAL_BUTTON = "//button[contains(text(), 'Close') or contains(text(), 'Fechar')]"
+    CLOSE_MODAL_BUTTON = "span[aria-label='Close']"
     IFRAME_END_LIST = "//iframe[title='Intentionally left blank']"
+    FOLLOWERS_BOX = "//div/ul/div"
 
 
 class InstaWorker:
@@ -48,7 +54,7 @@ class InstaWorker:
     driver = None
 
     # maximo timeout to waiting an element be printed
-    TIMEOUT = 20
+    TIMEOUT = 10
 
     def __init__(self):
         self.set_up()
@@ -76,19 +82,21 @@ class InstaWorker:
     def spy_profiles_pages(self, driver):
 
         for profile in Config.PROFILES:
-            # build profile url and open page
-            profile_url = Config.INSTA_BASE_URL + profile
-            print("Working on : {}".format(profile_url))
-            time.sleep(5)
-            driver.get(profile_url)
-            time.sleep(1)
+            try:
+                # build profile url and open page
+                profile_url = Config.INSTA_BASE_URL + profile
+                print("Working on : {}".format(profile_url))
+                time.sleep(1)
+                driver.get(profile_url)
+                time.sleep(1)
 
-            # wait and click on followers link
-            self.click_followers_link(profile)
+                # wait and click on followers link
+                self.click_followers_link(profile)
 
-            # click in all followers
-            self.click_in_all_followers()
-
+                # click in all followers
+                self.click_in_all_followers()
+            except RuntimeError:
+                print("error run time")
 
     # do insta login
     def do_login(self, driver):
@@ -120,25 +128,47 @@ class InstaWorker:
     def click_in_all_followers(self):
 
         # sleep to avoid authentication error
-        time.sleep(2)
+        time.sleep(1)
 
         # wait using close button, because profile
         # may have followers
         WebDriverWait(self.driver, timeout=self.TIMEOUT) \
-            .until(EC.presence_of_element_located((By.XPATH, Css.CLOSE_MODAL_BUTTON)))
+            .until(EC.presence_of_element_located((By.CSS_SELECTOR, Css.CLOSE_MODAL_BUTTON)))
 
         time.sleep(2)
 
+        close_button = self.driver.find_element_by_css_selector(Css.CLOSE_MODAL_BUTTON)
+
+        # scroll div
+        followers_box = self.driver.find_element_by_xpath(Css.FOLLOWERS_BOX)
+        previous_quantity = 0
+        atual_quantity = len(self.driver.find_elements_by_xpath(Css.FOLLOW_BUTTON))
+        while 400 > atual_quantity > previous_quantity:
+            previous_quantity = len(self.driver.find_elements_by_xpath(Css.FOLLOW_BUTTON))
+
+            self.driver.execute_script("document.getElementsByClassName('" +
+                                       self.driver.find_elements_by_xpath(Css.FOLLOW_BUTTON)[0].get_attribute(
+                                           "class") + "')[0].focus();")
+            for i in range(1, 400):
+                self.driver.find_elements_by_xpath(Css.FOLLOW_BUTTON)[0].send_keys(KEYS.ARROW_DOWN)
+            atual_quantity = len(self.driver.find_elements_by_xpath(Css.FOLLOW_BUTTON))
+
         # find all follow buttons and click follow
         buttons = self.driver.find_elements_by_xpath(Css.FOLLOW_BUTTON)
+        qtd = 0
         for button in buttons:
+            # sleep 10 minutes to avoid block
+            if qtd % 40 == 0:
+                print("Sleeping after {} invites".format(qtd))
+                time.sleep(630)
+
             if button.is_displayed() and button.is_enabled():
                 button.click()
                 time.sleep(0.4)
+            qtd = qtd + 1
 
         # find close modal button and click
         # before move to the next profile
-        close_button = self.driver.find_element_by_xpath(Css.CLOSE_MODAL_BUTTON)
         close_button.click()
 
     def click_followers_link(self, profile):
