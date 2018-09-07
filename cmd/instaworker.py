@@ -14,6 +14,7 @@ Before run:
     python3 instaworker.py
 
 """
+import datetime
 import os
 import time
 
@@ -28,11 +29,11 @@ class Config:
     INSTA_BASE_URL = "https://www.instagram.com/"
     LOGON_URL = INSTA_BASE_URL + "accounts/login/"
     # coloque os perfis
-    PROFILES = [ "aruba_br", "viajandosanandres", "amazingthailand",
-                "destinopuntacana", "tenerife.canary.islands", "jericoacoara", "paratyrjj",
+    PROFILES = [ "destinopuntacana", "tenerife.canary.islands", "jericoacoara",
+                "paratyrjj", "viajandosanandres", "amazingthailand",
                 "portodegalinhas", "portoseguro.bahia", "maceioalagoas", "cyprus.photos", "fortalezacearaoficial",
                 "visitetrancoso", "ilhabela_sp", "floripando", "jurereinternacionaloficial",
-                "gohawaii", "visitgreecegr", "salinasmaragogi", "ecoangradosreis", "ilhagrande_bra"]
+                "gohawaii", "visitgreecegr","aruba_br", "salinasmaragogi", "ecoangradosreis", "ilhagrande_bra"]
     USER = "angradosreisparadise@gmail.com"
     PWD = "86!vivi!edith"
 
@@ -85,7 +86,7 @@ class InstaWorker:
             try:
                 # build profile url and open page
                 profile_url = Config.INSTA_BASE_URL + profile
-                print("Working on : {}".format(profile_url))
+                print("{} - Working on : {}".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), profile_url))
                 time.sleep(1)
                 driver.get(profile_url)
                 time.sleep(1)
@@ -140,17 +141,18 @@ class InstaWorker:
         close_button = self.driver.find_element_by_css_selector(Css.CLOSE_MODAL_BUTTON)
 
         # scroll div
-        followers_box = self.driver.find_element_by_xpath(Css.FOLLOWERS_BOX)
         previous_quantity = 0
         atual_quantity = len(self.driver.find_elements_by_xpath(Css.FOLLOW_BUTTON))
-        while 400 > atual_quantity > previous_quantity:
-            previous_quantity = len(self.driver.find_elements_by_xpath(Css.FOLLOW_BUTTON))
+        while 280 > atual_quantity > previous_quantity:
+            previous_quantity = atual_quantity
 
             self.driver.execute_script("document.getElementsByClassName('" +
                                        self.driver.find_elements_by_xpath(Css.FOLLOW_BUTTON)[0].get_attribute(
                                            "class") + "')[0].focus();")
-            for i in range(1, 400):
+            print("Started roll down: {} ".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M")))
+            for i in range(1, 500):
                 self.driver.find_elements_by_xpath(Css.FOLLOW_BUTTON)[0].send_keys(KEYS.ARROW_DOWN)
+            print("Finished roll down: {} ".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M")))
             atual_quantity = len(self.driver.find_elements_by_xpath(Css.FOLLOW_BUTTON))
 
         # find all follow buttons and click follow
@@ -158,8 +160,8 @@ class InstaWorker:
         qtd = 0
         for button in buttons:
             # sleep 10 minutes to avoid block
-            if qtd % 40 == 0:
-                print("Sleeping after {} invites".format(qtd))
+            if qtd > 0 and qtd % 40 == 0:
+                print("{} - Sleeping after {} invites".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), qtd))
                 time.sleep(630)
 
             if button.is_displayed() and button.is_enabled():
@@ -167,9 +169,12 @@ class InstaWorker:
                 time.sleep(0.4)
             qtd = qtd + 1
 
+        print("{} invites sent".format(qtd))
         # find close modal button and click
         # before move to the next profile
         close_button.click()
+        print("{} - Sleeping after {} invites".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), qtd))
+        time.sleep(630)
 
     def click_followers_link(self, profile):
         f_profile = Css.FOLLOWERS_LINK.format(profile)
